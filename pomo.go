@@ -8,6 +8,10 @@ import (
 	"pomo/server"
 )
 
+var rawConfigDir string = "$HOME/.config/pomo"
+
+const rawConfigDirHelp = "The directory to store config data"
+
 func list() error {
 	rofi.Message("Pomo - pomodoro timers")
 	fmt.Println("create")
@@ -61,6 +65,10 @@ func rofiMode() error {
 }
 
 func main() {
+	// Prepare flags
+	flag.StringVar(&rawConfigDir, "config", rawConfigDir, rawConfigDirHelp)
+	flag.StringVar(&rawConfigDir, "c", rawConfigDir, rawConfigDirHelp)
+
 	flag.Parse()
 	args := flag.Args()
 	cmd := "list"
@@ -69,8 +77,8 @@ func main() {
 		args = args[1:]
 	}
 
-	configDir := os.ExpandEnv("$HOME/.config/pomo")
 	// configFilename := configDir + "/pomo.json"
+	configDir := os.ExpandEnv(rawConfigDir)
 	if err := os.MkdirAll(configDir, 0700); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
