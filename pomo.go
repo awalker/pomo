@@ -1,26 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
+	"pomo/rofi"
 )
 
-const END_ENTRY rune = 0
-const FIELD_SEP rune = 0x1f
-
-func rofi(prefix string, field string, msg string) string {
-	return fmt.Sprintf("%s%c%s%c%s", prefix, END_ENTRY, field, FIELD_SEP, msg)
-}
-
-func rofiMessage(msg string) {
-	fmt.Println(rofi("", "message", msg))
-}
-
 func list() error {
-	rofiMessage("Pomo - pomodoro timers")
+	rofi.Message("Pomo - pomodoro timers")
 	fmt.Println("create")
 	fmt.Println("pause")
 	fmt.Println("start")
@@ -30,6 +18,11 @@ func list() error {
 
 func start() error {
 	fmt.Println("do start")
+	choice, err := rofi.Dmenu("pomo start> ", "", "standard", "standard with label", "short break", "long break")
+	if err != nil {
+		return err
+	}
+	fmt.Println(choice)
 	return nil
 }
 
@@ -41,7 +34,7 @@ func create() error {
 	// fmt.Println(rofi("", "prompt", "Label"))
 	// rofiMessage("Create a new label")
 	// fmt.Println("create")
-	label, err := rofiInput("Enter Label > ")
+	label, err := rofi.Input("Enter Label > ")
 	if err != nil {
 		return err
 	}
@@ -49,47 +42,21 @@ func create() error {
 	return nil
 }
 
-func rofiCmd(params ...string) (*exec.Cmd, error) {
-	rofiBin, err := exec.LookPath("rofi")
-	if err != nil {
-		return nil, fmt.Errorf("Could not find rofi command (%w)", err)
-	}
-	cmd := exec.Command(rofiBin, params...)
-	return cmd, nil
-}
-
 func rofiMode() error {
-	binary := os.Args[0]
-	// cmd, err := rofiCmd("-modi", "pomo:"+binary, "-show", "pomo")
-	cmd, err := rofiCmd("-prompt", "pomo> ", "-dmenu")
+	choice, err := rofi.Dmenu("pomo> ", "No timer currently running.", "start", "stop", "pause", "list")
 	if err != nil {
 		return err
 	}
-	var out bytes.Buffer
-
-	cmd.Stdout = &out
-	// cmd.Stdin =
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("Could not run rofi command (%w)", err)
+	switch choice {
+	case "start":
+		err = start()
+	case "stop":
+		err = stop()
+	case "pause":
+	case "list":
+		err = list()
 	}
-	fmt.Println(out.String())
-	return nil
-}
-
-func rofiInput(prompt string) (string, error) {
-	// bla=$(rofi -dmenu -input /dev/null -p "Enter Text > ")
-	cmd, err := rofiCmd("-dmenu", "-input", "/dev/null", "-p", prompt)
-	if err != nil {
-		return "", err
-	}
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err = cmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("Could not get input from rofi command (%w)", err)
-	}
-	return out.String(), nil
+	return err
 }
 
 func daemon() error {
@@ -124,7 +91,20 @@ func main() {
 	case "create":
 		err = create()
 	case "rofi":
+		if len(args) > 0 {
+			rofiCmd := args[0]
+			fmt.Println(args)
+			if rofiCmd == "start" {
+				fmt.Println("start standard")
+				fmt.Println("start <b>label</b>")
+			}
+		} else {
+			err = list()
+		}
+	case "dmenu":
 		err = rofiMode()
+	case "server":
+		err = daemon()
 	case "daemon":
 		err = daemon()
 	default:
