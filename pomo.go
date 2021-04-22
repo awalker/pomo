@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"pomo/rofi"
+	"pomo/server"
 )
 
 func list() error {
@@ -59,10 +60,6 @@ func rofiMode() error {
 	return err
 }
 
-func daemon() error {
-	return nil
-}
-
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -104,9 +101,12 @@ func main() {
 	case "dmenu":
 		err = rofiMode()
 	case "server":
-		err = daemon()
+		err = server.Start()
 	case "daemon":
-		err = daemon()
+		err = server.Start()
+		if err == nil {
+			err = server.Detach()
+		}
 	default:
 		fmt.Printf("%s not found\n", cmd)
 	}
