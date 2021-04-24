@@ -3,14 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"pomo/rofi"
 	"pomo/server"
+	"pomo/timers"
 )
 
 var rawConfigDir string = "$HOME/.config/pomo"
-
-const rawConfigDirHelp = "The directory to store config data"
+var serverUrl string = ""
 
 func list() error {
 	rofi.Message("Pomo - pomodoro timers")
@@ -66,26 +67,55 @@ func rofiMode() error {
 
 func main() {
 	// Prepare flags
+	const rawConfigDirHelp = "The directory to store config data"
+	const serverHelp = "url to server"
 	flag.StringVar(&rawConfigDir, "config", rawConfigDir, rawConfigDirHelp)
-	flag.StringVar(&rawConfigDir, "c", rawConfigDir, rawConfigDirHelp)
+	flag.StringVar(&rawConfigDir, "c", rawConfigDir, rawConfigDirHelp+" <shortcut>")
+	flag.StringVar(&serverUrl, "server", serverUrl, serverHelp)
 
+	// Server sub-command flags
+	serverFlags := flag.NewFlagSet("server", flag.ExitOnError)
+	detach := false
+	serverFlags.BoolVar(&detach, "d", detach, "Detach from tty. Daemonize.")
+
+	// Map sub-commands
+	flagsMap := make(map[string]*flag.FlagSet)
+	flagsMap["server"] = serverFlags
+
+	// Parse all flags
 	flag.Parse()
 	args := flag.Args()
 	cmd := "list"
 	if len(args) != 0 {
 		cmd = args[0]
 		args = args[1:]
+		if flags, found := flagsMap[cmd]; found {
+			flags.Parse(args)
+			args = flags.Args()
+		}
 	}
 
-	// configFilename := configDir + "/pomo.json"
-	configDir := os.ExpandEnv(rawConfigDir)
-	if err := os.MkdirAll(configDir, 0700); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	// TODO: if serverUrl is blank, check if server is running on local machine
+	// If so, set serverUrl to correct value.
+
+	// Load data if needed
+	if serverUrl == "" {
+		configDir := os.ExpandEnv(rawConfigDir)
+		if err := os.MkdirAll(configDir, 0700); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		timers, err := timers.Load(configDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_ = timers
+		fmt.Println(timers)
 	}
 
 	var err error
 
+	// Execute sub-commands
 	switch cmd {
 	case "list":
 		err = list()
@@ -110,14 +140,14 @@ func main() {
 		err = rofiMode()
 	case "server":
 		err = server.Start()
-	case "daemon":
-		err = server.Start()
-		if err == nil {
+		if detach && err == nil {
 			err = server.Detach()
 		}
 	default:
 		fmt.Printf("%s not found\n", cmd)
 	}
+
+	// Final error handling and clean up
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
