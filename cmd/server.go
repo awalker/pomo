@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"log"
+	"pomo/server"
 
 	"github.com/spf13/cobra"
 )
@@ -18,7 +19,13 @@ var (
 		Short: "Start a pomo server",
 		Long:  `Start a pomo server.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Hugo Static Site Generator v0.9 -- HEAD")
+			err := server.Start()
+			if err == nil && detach {
+				err = server.Detach()
+			}
+			if err != nil {
+				log.Fatal(err)
+			}
 		},
 	}
 )
