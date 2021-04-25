@@ -17,7 +17,13 @@ var (
 		Short: "write the config",
 		Long:  `Write the config file.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := viper.WriteConfig(); err != nil {
+			writeCfgPath := configFile
+			if writeCfgPath == "" && len(args) > 0 {
+				writeCfgPath = args[0]
+			} else {
+				// writeCfgPath = os.ExpandEnv("$HOME/.config/pomo/pomo.toml")
+			}
+			if err := viper.WriteConfigAs(writeCfgPath); err != nil {
 				panic(fmt.Errorf("Fatal error writing config file: %w \n", err))
 			}
 		},

@@ -20,23 +20,32 @@ var (
 			cmd.Usage()
 		},
 	}
-	configFile string
-	serverUrl  string
+	configFile    string
+	serverUrl     string
+	dataDirectory string
 )
 
 func init() {
+	viper.SetEnvPrefix("pomo")
 	cobra.OnInitialize(initConfig)
 
-	// defaultConfigFile := os.ExpandEnv("$HOME/.config/pomo/pomo.json")
+	defaultDataDirectory := os.ExpandEnv("$HOME/.config/pomo")
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "Path to the configuration file.")
 	rootCmd.PersistentFlags().StringVarP(&serverUrl, "server", "s", "", "Url to server.")
+	rootCmd.PersistentFlags().StringVarP(&dataDirectory, "data", "", defaultDataDirectory, "Path to a directory where pomo data is stored")
 
 	// Could read config from env I guess? Otherwise kinda pointless
-	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
-	viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
+	viper.BindEnv("config")
+	//viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("client.server.url", rootCmd.PersistentFlags().Lookup("server"))
+	viper.BindPFlag("data", rootCmd.PersistentFlags().Lookup("data"))
+
 }
 
 func initConfig() {
+	if configFile == "" {
+		configFile = viper.GetString("config")
+	}
 	if configFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(configFile)
@@ -50,7 +59,9 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
+		// TODO: This is for debugging. Remove before production
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		fmt.Println("viper.get server.port", viper.GetInt("server.port"))
 	}
 }
 
