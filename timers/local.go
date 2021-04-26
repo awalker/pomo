@@ -22,45 +22,84 @@ const (
 
 type LocalTimers struct {
 	Timers
-	filePath string
+	filePath         string
+	templateFilePath string
 }
 
 func Load() (*LocalTimers, error) {
 	dataFolder := viper.GetString(DATA)
 	jsonFileName := path.Join(dataFolder, "timers.json")
+	templateFileName := path.Join(dataFolder, "templates.json")
 	timers := LocalTimers{}
 	timers.filePath = jsonFileName
+	timers.templateFilePath = templateFileName
 	return &timers, timers.Load()
 }
 
 func (t *LocalTimers) Load() error {
+	t.AutoStartBreaks = viper.GetBool(AUTOSTART_BREAKS)
+	t.DesiredPomsPerDay = viper.GetInt(GOAL)
+	t.PomBeforeLongBreak = viper.GetInt(SHORT_BREAKS_BEFORE_LONG_BREAK)
+
+	if jsonFile, err := os.Open(t.templateFilePath); err == nil {
+		defer jsonFile.Close()
+		decoder := json.NewDecoder(jsonFile)
+		err = decoder.Decode(&t.Timers.Templates)
+		if err != nil {
+			return fmt.Errorf("timers: Failed to parse templates file (%w)", err)
+		}
+	} else if os.IsNotExist(err) {
+		// Data file not found. Create a blank/default data file.
+		const (
+			NAME = ".name"
+			DUR  = ".duration"
+		)
+		ssb, slb := viper.GetString(DEFAULT_BREAKS_SHORT+NAME), viper.GetString(DEFAULT_BREAKS_LONG+NAME)
+		dssb, dslb := viper.GetInt(DEFAULT_BREAKS_SHORT+DUR), viper.GetInt(DEFAULT_BREAKS_LONG+DUR)
+		def_name, def_dur := viper.GetString(DEFAULT_WORK+NAME), viper.GetInt(DEFAULT_WORK+DUR)
+		w := NewTemplate(def_name, "", 1, def_dur, &ssb, &slb)
+		sb := NewTemplate(ssb, "", 2, dssb, nil, nil)
+		lb := NewTemplate(slb, "", 3, dslb, nil, nil)
+		t.Templates = []*TimerTemplate{w, sb, lb}
+		// Should probably save the config now.
+		if err := t.SaveTemplates(); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("timers: Could not load templates file (%w)", err)
+	}
+
 	if jsonFile, err := os.Open(t.filePath); err == nil {
 		defer jsonFile.Close()
 		decoder := json.NewDecoder(jsonFile)
-		err = decoder.Decode(&t.Timers)
+		err = decoder.Decode(&t.Data)
 		if err != nil {
 			return fmt.Errorf("timers: Failed to parse config file (%w)", err)
 		}
 		return nil
 	} else if os.IsNotExist(err) {
 		// Data file not found. Create a blank/default data file.
-		t.AutoStartBreaks = viper.GetBool(AUTOSTART_BREAKS)
-		t.DesiredPomsPerDay = viper.GetInt(GOAL)
-		t.PomBeforeLongBreak = viper.GetInt(SHORT_BREAKS_BEFORE_LONG_BREAK)
-		ssb, slb := "Short Break", "Long Break"
-		w := NewTemplate("Pom", "", 1, 60*25, &ssb, &slb)
-		sb := NewTemplate(ssb, "", 2, 60*5, nil, nil)
-		lb := NewTemplate(slb, "", 3, 60*15, nil, nil)
-		t.Templates = []*TimerTemplate{w, sb, lb}
 		// Should probably save the config now.
-		return t.Save()
+		return t.SaveData()
 	} else {
-		return fmt.Errorf("timers:Could not load config file (%w)", err)
+		return fmt.Errorf("timers: Could not load templates file (%w)", err)
 	}
 }
 
-func (t *LocalTimers) Save() error {
-	json.NewEncoder(os.Stdout).Encode(t.Timers)
+func (t *LocalTimers) SaveTemplates() error {
+	json.NewEncoder(os.Stdout).Encode(t.Timers.Templates)
+	/*if wFile, err := os.Create(jsonFileName); err == nil {
+		defer wFile.Close()
+		enc := json.NewEncoder(wFile)
+		enc.Encode(timers)
+	} else {
+		fmt.Println("Could not right configuration file. ", jsonFileName, err)
+	}*/
+	return nil
+}
+
+func (t *LocalTimers) SaveData() error {
+	json.NewEncoder(os.Stdout).Encode(t.Data)
 	/*if wFile, err := os.Create(jsonFileName); err == nil {
 		defer wFile.Close()
 		enc := json.NewEncoder(wFile)

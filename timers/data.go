@@ -16,13 +16,17 @@ type Timer struct {
 	Label    string
 }
 
+type Data struct {
+	Active    *Timer
+	Completed []*Timer
+	Paused    bool
+}
+
 type Timers struct {
-	Active             *Timer
-	Completed          []*Timer
+	Data
 	Templates          []*TimerTemplate
 	AutoStartBreaks    bool
 	AutoStartWork      bool
-	Paused             bool
 	DesiredPomsPerDay  int
 	PomBeforeLongBreak int
 }
