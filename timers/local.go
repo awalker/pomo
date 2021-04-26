@@ -78,6 +78,7 @@ func (t *LocalTimers) Load() error {
 		if err != nil {
 			return fmt.Errorf("timers: Failed to parse config file (%w)", err)
 		}
+		t.Normalize()
 		return nil
 	} else if os.IsNotExist(err) {
 		// Data file not found. Create a blank/default data file.
@@ -88,27 +89,42 @@ func (t *LocalTimers) Load() error {
 	}
 }
 
+func (t *LocalTimers) Normalize() error {
+	// Check if active timer has expired
+	if t.Active != nil {
+		if time.Now().After(t.Active.Ends) {
+			fmt.Println("afet")
+			t.Completed = append(t.Completed, t.Active)
+			t.Active = nil
+			// TODO: check auto starts
+			return t.SaveData()
+		} else {
+			fmt.Println("not after")
+		}
+	}
+	return nil
+}
+
 func (t *LocalTimers) SaveTemplates() error {
-	json.NewEncoder(os.Stdout).Encode(t.Timers.Templates)
-	/*if wFile, err := os.Create(jsonFileName); err == nil {
+	// json.NewEncoder(os.Stdout).Encode(t.Timers.Templates)
+	if wFile, err := os.Create(t.templateFilePath); err == nil {
 		defer wFile.Close()
 		enc := json.NewEncoder(wFile)
-		enc.Encode(timers)
+		enc.Encode(t.Templates)
 	} else {
-		fmt.Println("Could not right configuration file. ", jsonFileName, err)
-	}*/
+		fmt.Println("Could not write templates file. ", t.templateFilePath, err)
+	}
 	return nil
 }
 
 func (t *LocalTimers) SaveData() error {
-	json.NewEncoder(os.Stdout).Encode(t.Data)
-	/*if wFile, err := os.Create(jsonFileName); err == nil {
+	if wFile, err := os.Create(t.filePath); err == nil {
 		defer wFile.Close()
 		enc := json.NewEncoder(wFile)
-		enc.Encode(timers)
+		enc.Encode(t.Data)
 	} else {
-		fmt.Println("Could not right configuration file. ", jsonFileName, err)
-	}*/
+		fmt.Println("Could not write data file. ", t.filePath, err)
+	}
 	return nil
 }
 
