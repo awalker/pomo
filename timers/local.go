@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
-const DATA = "data.directory"
 const (
+	DATA                           = "data.directory"
 	AUTOSTART_BREAKS               = "autostart.breaks"
 	AUTOSTART_WORK                 = "autostart.work"
 	SHORT_BREAKS_BEFORE_LONG_BREAK = "default.short_breaks_before_long_break"
@@ -55,8 +57,8 @@ func (t *LocalTimers) Load() error {
 			DUR  = ".duration"
 		)
 		ssb, slb := viper.GetString(DEFAULT_BREAKS_SHORT+NAME), viper.GetString(DEFAULT_BREAKS_LONG+NAME)
-		dssb, dslb := viper.GetInt(DEFAULT_BREAKS_SHORT+DUR), viper.GetInt(DEFAULT_BREAKS_LONG+DUR)
-		def_name, def_dur := viper.GetString(DEFAULT_WORK+NAME), viper.GetInt(DEFAULT_WORK+DUR)
+		dssb, dslb := viper.GetDuration(DEFAULT_BREAKS_SHORT+DUR), viper.GetDuration(DEFAULT_BREAKS_LONG+DUR)
+		def_name, def_dur := viper.GetString(DEFAULT_WORK+NAME), viper.GetDuration(DEFAULT_WORK+DUR)
 		w := NewTemplate(def_name, "", 1, def_dur, &ssb, &slb)
 		sb := NewTemplate(ssb, "", 2, dssb, nil, nil)
 		lb := NewTemplate(slb, "", 3, dslb, nil, nil)
@@ -110,7 +112,36 @@ func (t *LocalTimers) SaveData() error {
 	return nil
 }
 
-func timerTemplateConfig(name string, duration int) map[string]interface{} {
+func (d *LocalTimers) FindTemplate(name string) *TimerTemplate {
+	for _, t := range d.Templates {
+		if t.Name == name {
+			return t
+		}
+	}
+	return nil
+}
+
+func (d *LocalTimers) Start(name string) error {
+	if d.Active == nil {
+		template := d.FindTemplate(name)
+		if template == nil {
+			return fmt.Errorf("localTimer.Start: Template not found")
+		}
+		// We have a template, create the Active Timer
+		timer := new(Timer)
+		timer.Id = uuid.New().String()
+		timer.Template = name
+		timer.Duration = template.Duration
+		timer.Started = time.Now()
+		timer.Ends = time.Now().Add(template.Duration)
+		d.Active = timer
+		return nil
+	} else {
+		return fmt.Errorf("localTimer.Start: A timer is already active")
+	}
+}
+
+func timerTemplateConfig(name string, duration string) map[string]interface{} {
 	return map[string]interface{}{"name": name, "duration": duration}
 }
 
@@ -119,7 +150,7 @@ func init() {
 	viper.SetDefault(AUTOSTART_WORK, false)
 	viper.SetDefault(SHORT_BREAKS_BEFORE_LONG_BREAK, 4)
 	viper.SetDefault(GOAL, 8)
-	viper.SetDefault(DEFAULT_BREAKS_LONG, timerTemplateConfig("Long Break", 15*60))
-	viper.SetDefault(DEFAULT_BREAKS_SHORT, timerTemplateConfig("Short Break", 5*60))
-	viper.SetDefault(DEFAULT_WORK, timerTemplateConfig("Work", 25*60))
+	viper.SetDefault(DEFAULT_BREAKS_LONG, timerTemplateConfig("Long Break", "15m"))
+	viper.SetDefault(DEFAULT_BREAKS_SHORT, timerTemplateConfig("Short Break", "5m"))
+	viper.SetDefault(DEFAULT_WORK, timerTemplateConfig("Work", "25m"))
 }

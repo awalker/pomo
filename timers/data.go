@@ -1,9 +1,11 @@
 package timers
 
+import "time"
+
 type TimerTemplate struct {
 	Name          string
 	TimerType     int
-	Duration      int
+	Duration      time.Duration
 	TemplateLabel string
 	ShortBreak    *string
 	LongBreak     *string
@@ -11,9 +13,11 @@ type TimerTemplate struct {
 
 type Timer struct {
 	Template string
-	Started  int
-	Ends     int
+	Id       string
+	Started  time.Time
+	Ends     time.Time
 	Label    string
+	Duration time.Duration
 }
 
 type Data struct {
@@ -32,7 +36,7 @@ type Timers struct {
 	PomBeforeLongBreak int
 }
 
-func NewTemplate(name, templateLabel string, timerType, duration int, sb, lb *string) *TimerTemplate {
+func NewTemplate(name, templateLabel string, timerType int, duration time.Duration, sb, lb *string) *TimerTemplate {
 	return &TimerTemplate{name, timerType, duration, templateLabel, sb, lb}
 }
 
