@@ -5,9 +5,19 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"pomo/cmd"
 
 	"github.com/spf13/viper"
+)
+
+const DATA = "data.directory"
+const (
+	AUTOSTART_BREAKS               = "autostart.breaks"
+	AUTOSTART_WORK                 = "autostart.work"
+	SHORT_BREAKS_BEFORE_LONG_BREAK = "default.short_breaks_before_long_break"
+	GOAL                           = "default.goal"
+	DEFAULT_BREAKS_LONG            = "default.breaks.long"
+	DEFAULT_BREAKS_SHORT           = "default.breaks.short"
+	DEFAULT_WORK                   = "default.work"
 )
 
 type LocalTimers struct {
@@ -16,7 +26,7 @@ type LocalTimers struct {
 }
 
 func Load() (*LocalTimers, error) {
-	dataFolder := viper.GetString(cmd.DATA)
+	dataFolder := viper.GetString(DATA)
 	jsonFileName := path.Join(dataFolder, "timers.json")
 	timers := LocalTimers{}
 	timers.filePath = jsonFileName
@@ -29,14 +39,14 @@ func (t *LocalTimers) Load() error {
 		decoder := json.NewDecoder(jsonFile)
 		err = decoder.Decode(&t.Timers)
 		if err != nil {
-			return fmt.Errorf("timers:Failed to parse config file (%w)", err)
+			return fmt.Errorf("timers: Failed to parse config file (%w)", err)
 		}
 		return nil
 	} else if os.IsNotExist(err) {
 		// Data file not found. Create a blank/default data file.
-		t.AutoStartBreaks = true
-		t.DesiredPomsPerDay = 8
-		t.PomBeforeLongBreak = 4
+		t.AutoStartBreaks = viper.GetBool(AUTOSTART_BREAKS)
+		t.DesiredPomsPerDay = viper.GetInt(GOAL)
+		t.PomBeforeLongBreak = viper.GetInt(SHORT_BREAKS_BEFORE_LONG_BREAK)
 		ssb, slb := "Short Break", "Long Break"
 		w := NewTemplate("Pom", "", 1, 60*25, &ssb, &slb)
 		sb := NewTemplate(ssb, "", 2, 60*5, nil, nil)
@@ -59,4 +69,18 @@ func (t *LocalTimers) Save() error {
 		fmt.Println("Could not right configuration file. ", jsonFileName, err)
 	}*/
 	return nil
+}
+
+func timerTemplateConfig(name string, duration int) map[string]interface{} {
+	return map[string]interface{}{"name": name, "duration": duration}
+}
+
+func init() {
+	viper.SetDefault(AUTOSTART_BREAKS, true)
+	viper.SetDefault(AUTOSTART_WORK, false)
+	viper.SetDefault(SHORT_BREAKS_BEFORE_LONG_BREAK, 4)
+	viper.SetDefault(GOAL, 8)
+	viper.SetDefault(DEFAULT_BREAKS_LONG, timerTemplateConfig("Long Break", 15*60))
+	viper.SetDefault(DEFAULT_BREAKS_SHORT, timerTemplateConfig("Short Break", 5*60))
+	viper.SetDefault(DEFAULT_WORK, timerTemplateConfig("Work", 25*60))
 }
