@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"pomo/cmd"
+
+	"github.com/spf13/viper"
 )
 
 type LocalTimers struct {
@@ -12,8 +15,9 @@ type LocalTimers struct {
 	filePath string
 }
 
-func Load(configFolder string) (*LocalTimers, error) {
-	jsonFileName := path.Join(configFolder, "pomo.json")
+func Load() (*LocalTimers, error) {
+	dataFolder := viper.GetString(cmd.DATA)
+	jsonFileName := path.Join(dataFolder, "timers.json")
 	timers := LocalTimers{}
 	timers.filePath = jsonFileName
 	return &timers, timers.Load()
@@ -29,7 +33,7 @@ func (t *LocalTimers) Load() error {
 		}
 		return nil
 	} else if os.IsNotExist(err) {
-		// Config file not found. Create a blank config.
+		// Data file not found. Create a blank/default data file.
 		t.AutoStartBreaks = true
 		t.DesiredPomsPerDay = 8
 		t.PomBeforeLongBreak = 4

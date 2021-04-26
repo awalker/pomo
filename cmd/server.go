@@ -26,7 +26,7 @@ var (
 		Short: "Start a pomo server",
 		Long:  `Start a pomo server.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("port", viper.GetInt("server.port"))
+			fmt.Println("port", viper.GetInt(SERVER_PORT))
 			err := server.Start()
 			if err == nil && detach {
 				err = server.Detach()

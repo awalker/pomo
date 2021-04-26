@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"pomo/timers"
 
 	"github.com/spf13/cobra"
 )
@@ -15,8 +15,12 @@ var (
 		Use:   "list",
 		Short: "List timers and labels",
 		Long:  `List all timers and labels.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Hugo Static Site Generator v0.9 -- HEAD")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			timers, err := timers.Load()
+
+			_ = timers
+
+			return err
 		},
 	}
 )
