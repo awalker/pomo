@@ -19,6 +19,7 @@ type Timer struct {
 type Data struct {
 	Active    *Timer
 	Completed []*Timer
+	Labels    []string
 	Paused    bool
 }
 
