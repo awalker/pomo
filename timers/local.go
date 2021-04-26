@@ -90,6 +90,7 @@ func (t *LocalTimers) Load() error {
 }
 
 func (t *LocalTimers) Normalize() error {
+	changed := false
 	// Check if active timer has expired
 	if t.Active != nil {
 		if time.Now().After(t.Active.Ends) {
@@ -97,10 +98,14 @@ func (t *LocalTimers) Normalize() error {
 			t.Completed = append(t.Completed, t.Active)
 			t.Active = nil
 			// TODO: check auto starts
-			return t.SaveData()
+			changed = true
 		} else {
 			fmt.Println("not after")
 		}
+	}
+	// FIXME: Filter out old timers
+	if changed {
+		return t.SaveData()
 	}
 	return nil
 }
