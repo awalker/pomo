@@ -38,15 +38,16 @@ var (
 				if a := timers.Active; a != nil {
 					t := timers.FindTemplate(a.Template)
 					if timers.Paused {
-						fmt.Println("Paused: ", t.Name)
+						fmt.Println("Paused: ", t.Name, a.Label)
 					} else {
-						d := time.Until(a.Ends)
-						fmt.Println("Active: ", t.Name, d, "left")
+						d := time.Until(*a.Ends)
+						fmt.Println("Active: ", t.Name, a.Label, d, "left")
 					}
 				}
 			}
 
 			if listHeaders && listTimers {
+				fmt.Println("")
 				fmt.Println("Timer Names:")
 			}
 			if listTimers {
@@ -55,6 +56,7 @@ var (
 				}
 			}
 			if listHeaders && listLabels {
+				fmt.Println("")
 				fmt.Println("Timer Labels:")
 			}
 			if listLabels {
@@ -63,6 +65,7 @@ var (
 				}
 			}
 			if listHeaders && listCompleted {
+				fmt.Println("")
 				fmt.Println("History:")
 			}
 			if listCompleted {
