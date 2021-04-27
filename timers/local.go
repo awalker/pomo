@@ -93,14 +93,12 @@ func (t *LocalTimers) Normalize() error {
 	changed := false
 	// Check if active timer has expired
 	if t.Active != nil {
-		if time.Now().After(t.Active.Ends) {
-			fmt.Println("afet")
+		if time.Now().After(*t.Active.Ends) {
 			t.Completed = append(t.Completed, t.Active)
 			t.Active = nil
 			// TODO: check auto starts
 			changed = true
 		} else {
-			fmt.Println("not after")
 		}
 	}
 	// FIXME: Filter out old timers
@@ -142,19 +140,25 @@ func (d *LocalTimers) FindTemplate(name string) *TimerTemplate {
 	return nil
 }
 
-func (d *LocalTimers) Start(name string) error {
+func (d *LocalTimers) Start(name string, label string) error {
 	if d.Active == nil {
 		template := d.FindTemplate(name)
 		if template == nil {
 			return fmt.Errorf("localTimer.Start: Template not found")
 		}
 		// We have a template, create the Active Timer
+		now := time.Now()
+		ends := time.Now().Add(template.Duration)
 		timer := new(Timer)
 		timer.Id = uuid.New().String()
 		timer.Template = name
 		timer.Duration = template.Duration
-		timer.Started = time.Now()
-		timer.Ends = time.Now().Add(template.Duration)
+		timer.Started = &now
+		timer.Ends = &ends
+		timer.Label = label
+		if label != "" {
+			d.Labels = append(d.Labels, label)
+		}
 		d.Active = timer
 		return nil
 	} else {

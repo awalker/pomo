@@ -14,8 +14,8 @@ type TimerTemplate struct {
 type Timer struct {
 	Template string
 	Id       string
-	Started  time.Time
-	Ends     time.Time
+	Started  *time.Time
+	Ends     *time.Time
 	Label    string
 	Duration time.Duration
 }

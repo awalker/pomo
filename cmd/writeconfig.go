@@ -13,7 +13,7 @@ func init() {
 
 var (
 	writeConfigCmd = &cobra.Command{
-		Use:   "write-config",
+		Use:   "write-config [file]",
 		Short: "write the config",
 		Long:  `Write the config file.`,
 		Run: func(cmd *cobra.Command, args []string) {
