@@ -18,6 +18,7 @@ type Timer struct {
 	Ends     *time.Time
 	Label    string
 	Duration time.Duration
+	Elapsed  time.Duration
 }
 
 type Data struct {

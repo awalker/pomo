@@ -93,7 +93,7 @@ func (t *LocalTimers) Normalize() error {
 	changed := false
 	// Check if active timer has expired
 	if t.Active != nil {
-		if time.Now().After(*t.Active.Ends) {
+		if t.Active.Ends != nil && time.Now().After(*t.Active.Ends) {
 			t.Completed = append(t.Completed, t.Active)
 			t.Active = nil
 			// TODO: check auto starts

@@ -38,7 +38,8 @@ var (
 				if a := timers.Active; a != nil {
 					t := timers.FindTemplate(a.Template)
 					if timers.Paused {
-						fmt.Println("Paused: ", t.Name, a.Label)
+						d := a.Duration - a.Elapsed
+						fmt.Println("Paused: ", t.Name, a.Label, d, "left")
 					} else {
 						d := time.Until(*a.Ends)
 						fmt.Println("Active: ", t.Name, a.Label, d, "left")
